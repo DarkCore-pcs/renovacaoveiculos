@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renovação Veículos - Estoque Oficial</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Alpine.js para interatividade -->
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <!-- SDK do Supabase para Banco de Dados Real -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        [x-cloak] { display: none !important; }
+        html { scroll-behavior: smooth; }
+        body {
+            background:
+                radial-gradient(circle at 20% 0%, rgba(220, 38, 38, .16), transparent 32rem),
+                radial-gradient(circle at 85% 10%, rgba(37, 99, 235, .12), transparent 28rem),
+                #000000;
+            color: #ffffff;
+            font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+        .glass-card { background: linear-gradient(180deg, rgba(24,24,27,.94), rgba(9,9,11,.98)); }
+        .soft-border { box-shadow: inset 0 1px 0 rgba(255,255,255,.04), 0 20px 60px rgba(0,0,0,.35); }
+        .scrollbar-none::-webkit-scrollbar { display: none; }
+        .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+        input, select, textarea { min-height: 46px; }
+
+        .animate-fade-up { animation: fadeUp .75s ease both; }
+        .animate-soft-zoom { animation: softZoom 12s ease-in-out infinite alternate; }
+        .animate-float { animation: floatCard 4.5s ease-in-out infinite; }
+        .stagger-1 { animation-delay: .08s; }
+        .stagger-2 { animation-delay: .16s; }
+        .stagger-3 { animation-delay: .24s; }
+        .card-glow { position: relative; isolation: isolate; }
+        .card-glow::before {
+            content: "";
+            position: absolute;
+            inset: -1px;
+            border-radius: 1rem;
+            background: linear-gradient(135deg, rgba(220,38,38,.38), transparent 38%, rgba(37,99,235,.24));
+            opacity: 0;
+            transition: opacity .35s ease;
+            z-index: -1;
+        }
+        .card-glow:hover::before { opacity: 1; }
+        .shine-btn { position: relative; overflow: hidden; }
+        .shine-btn::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: -80%;
+            width: 55%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,.22), transparent);
+            transform: skewX(-18deg);
+            transition: left .65s ease;
+        }
+        .shine-btn:hover::after { left: 125%; }
+        @keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes softZoom { from { transform: scale(1); } to { transform: scale(1.06); } }
+        @keyframes floatCard { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-7px); } }
+
+        .hero-real { min-height: 620px; }
+        .hero-bg {
+            background-image: url('WhatsApp Image 2026-05-21 at 12.32.18.jpeg');
+            background-size: cover;
+            background-position: center center;
+            transform: scale(1.02);
+            filter: saturate(1.08) contrast(1.05);
+            animation: heroKenBurns 18s ease-in-out infinite alternate;
+        }
+        @keyframes heroKenBurns {
+            from { transform: scale(1.02); background-position: center center; }
+            to { transform: scale(1.08); background-position: 58% center; }
+        }
+        @media (max-width: 900px) {
+            .hero-real { min-height: 680px; align-items: flex-end; }
+            .hero-bg { background-position: 58% center; }
+        }
+        @media (max-width: 640px) {
+            .hero-real { min-height: 720px; border-radius: 1.25rem; }
+            .hero-bg { background-position: 62% center; }
+        }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+        }
+        @media (max-width: 640px) {
+            main { padding-top: 1rem !important; }
+            .mobile-tight { padding-left: 1rem !important; padding-right: 1rem !important; }
+        }
+    </style>
+</head>
+<body x-data="app()" x-init="init()">
+
+    <!-- NAVBAR COM LOGO OFICIAL (Escondida se estiver no painel admin para dar privacidade) -->
+    <nav x-show="pagina !== 'admin' && pagina !== 'login_admin'" class="bg-black/90 backdrop-blur-xl border-b border-zinc-900 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20 md:h-24">
+                <div class="flex items-center cursor-pointer select-none group" >
+                    <div class="flex items-center font-black uppercase text-xl md:text-2xl tracking-tighter">
+                        <span class="text-blue-600 transition duration-200">RENOVAÇÃO</span>
+                        <span class="text-red-600 ml-1.5">VEÍCULOS</span>
+                    </div>
+                </div>
+
+                <!-- Abas para Desktop -->
+                <div class="hidden md:flex items-center space-x-8 text-sm font-medium">
+                    <a href="#" @click.prevent="pagina = 'estoque'" class="transition" :class="pagina === 'estoque' ? 'text-red-600 font-bold border-b-2 border-red-600 pb-1' : 'text-white hover:text-red-500'">Estoque</a>
+                    <a href="#" @click.prevent="pagina = 'financiar'" class="transition" :class="pagina === 'financiar' ? 'text-red-600 font-bold border-b-2 border-red-600 pb-1' : 'text-white hover:text-red-500'">Financiamento</a>
+                    <a href="#" @click.prevent="pagina = 'vender'" class="transition" :class="pagina === 'vender' ? 'text-red-600 font-bold border-b-2 border-red-600 pb-1' : 'text-white hover:text-red-500'">Venda seu Carro</a>
+                    <a href="#" @click.prevent="pagina = 'parceiros'" class="transition" :class="pagina === 'parceiros' ? 'text-red-600 font-bold border-b-2 border-red-600 pb-1' : 'text-white hover:text-red-500'">Parceiros</a>
+                </div>
+
+                <!-- Botão de WhatsApp (Desktop) e Hambúrguer (Mobile) -->
+                <div class="flex items-center gap-3">
+                    <!-- Botão Hambúrguer Mobile -->
+                    <button @click="mobileMenuAberto = !mobileMenuAberto" class="md:hidden flex flex-col justify-center items-center w-10 h-10 border border-zinc-800 rounded-xl bg-zinc-950 text-white gap-1.5 focus:outline-none transition">
+                        <span class="w-5 h-0.5 bg-white transition-all duration-300" :class="mobileMenuAberto ? 'rotate-45 translate-y-2' : ''"></span>
+                        <span class="w-5 h-0.5 bg-white transition-all duration-300" :class="mobileMenuAberto ? 'opacity-0' : ''"></span>
+                        <span class="w-5 h-0.5 bg-white transition-all duration-300" :class="mobileMenuAberto ? '-rotate-45 -translate-y-2' : ''"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Menu Retrátil Mobile -->
+        <div x-show="mobileMenuAberto" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0 -translate-y-4" x-transition:enter-end="opacity-100 translate-y-0" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100 translate-y-0" x-transition:leave-end="opacity-0 -translate-y-4" class="md:hidden bg-zinc-950 border-t border-zinc-900 px-4 py-4 space-y-3 shadow-2xl">
+            <a href="#" @click.prevent="pagina = 'estoque'; mobileMenuAberto = false;" class="block px-4 py-3 rounded-xl font-semibold text-sm transition" :class="pagina === 'estoque' ? 'bg-red-600 text-white' : 'text-zinc-300 hover:bg-zinc-900'">🚗 Estoque Disponível</a>
+            <a href="#" @click.prevent="pagina = 'financiar'; mobileMenuAberto = false;" class="block px-4 py-3 rounded-xl font-semibold text-sm transition" :class="pagina === 'financiar' ? 'bg-red-600 text-white' : 'text-zinc-300 hover:bg-zinc-900'">💰 Simular Financiamento</a>
+            <a href="#" @click.prevent="pagina = 'vender'; mobileMenuAberto = false;" class="block px-4 py-3 rounded-xl font-semibold text-sm transition" :class="pagina === 'vender' ? 'bg-red-600 text-white' : 'text-zinc-300 hover:bg-zinc-900'">🤝 Venda seu Carro</a>
+            <a href="#" @click.prevent="pagina = 'parceiros'; mobileMenuAberto = false;" class="block px-4 py-3 rounded-xl font-semibold text-sm transition" :class="pagina === 'parceiros' ? 'bg-red-600 text-white' : 'text-zinc-300 hover:bg-zinc-900'">🏦 Bancos Parceiros</a>
+        </div>
+    </nav>
+
+    <!-- CONTEÚDO PRINCIPAL -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- PÁGINA: ESTOQUE (VITRINE) -->
+        <div x-show="pagina === 'estoque'" x-transition>
+            
+            <!-- BANNER HERO COM FOTO REAL DA FACHADA -->
+            <section class="hero-real relative rounded-3xl mb-10 shadow-2xl border border-zinc-800 overflow-hidden bg-black soft-border animate-fade-up min-h-[620px] flex items-center">
+                <div class="absolute inset-0 hero-bg"></div>
+                <div class="absolute inset-0 bg-gradient-to-r from-black via-black/70 to-black/10"></div>
+                <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20"></div>
+
+                <div class="relative z-10 w-full max-w-[560px] px-6 sm:px-10 lg:px-14 py-12">
+                    <span class="inline-flex items-center rounded-full bg-red-600 px-5 py-2 text-sm font-black uppercase tracking-wide shadow-lg shadow-red-600/30 mb-5">
+                        Destaques
+                    </span>
+
+                    <h1 class="text-4xl sm:text-5xl lg:text-6xl font-black leading-[1.03] tracking-tight text-white drop-shadow-2xl">
+                        Seu próximo carro está na <span class="text-red-500">Renovação</span>
+                    </h1>
+
+                    <p class="mt-5 text-base sm:text-lg text-zinc-200 leading-relaxed max-w-[500px] drop-shadow">
+                        Estoque atualizado, atendimento direto no WhatsApp, financiamento facilitado e avaliação justa do seu usado.
+                    </p>
+
+                    <div class="grid grid-cols-3 gap-3 mt-7 max-w-[430px]">
+                        <div class="rounded-2xl border border-red-500/40 bg-black/45 backdrop-blur-md px-3 py-4 text-center">
+                            <div class="text-2xl mb-1">🤝</div>
+                            <p class="text-[11px] sm:text-xs font-bold uppercase text-white">Procedência<br>garantida</p>
+                        </div>
+                        <div class="rounded-2xl border border-red-500/40 bg-black/45 backdrop-blur-md px-3 py-4 text-center">
+                            <div class="text-2xl mb-1">🚗</div>
+                            <p class="text-[11px] sm:text-xs font-bold uppercase text-white">Financia<br>facilitado</p>
+                        </div>
+                        <div class="rounded-2xl border border-red-500/40 bg-black/45 backdrop-blur-md px-3 py-4 text-center">
+                            <div class="text-2xl mb-1">🔁</div>
+                            <p class="text-[11px] sm:text-xs font-bold uppercase text-white">Aceitamos<br>troca</p>
+                        </div>
+                    </div>
+
+                    <button
+                        type="button"
+                        @click="scrollParaEstoque()"
+                        class="shine-btn mt-7 inline-flex items-center gap-3 rounded-2xl bg-red-600 hover:bg-red-500 px-7 py-4 text-sm sm:text-base font-black uppercase tracking-wide text-white shadow-2xl shadow-red-600/35 transition hover:-translate-y-0.5 active:translate-y-0">
+                        Ver estoque completo <span class="text-2xl leading-none">→</span>
+                    </button>
+
+                    <div class="mt-10 grid grid-cols-3 gap-4 max-w-[540px] text-white">
+                        <div class="border-r border-white/15 pr-3">
+                            <p class="text-2xl sm:text-3xl font-black text-red-500">+10</p>
+                            <p class="text-[11px] sm:text-xs uppercase font-semibold text-zinc-200">anos de experiência</p>
+                        </div>
+                        <div class="border-r border-white/15 pr-3">
+                            <p class="text-2xl sm:text-3xl font-black text-red-500">+300</p>
+                            <p class="text-[11px] sm:text-xs uppercase font-semibold text-zinc-200">veículos vendidos</p>
+                        </div>
+                        <div>
+                            <p class="text-2xl sm:text-3xl font-black text-red-500">100%</p>
+                            <p class="text-[11px] sm:text-xs uppercase font-semibold text-zinc-200">atendimento personalizado</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- FILTROS AVANÇADOS -->
+            <section id="filtro-secao" class="bg-zinc-950 p-6 rounded-2xl border border-zinc-800 shadow-2xl mb-10 animate-fade-up stagger-1">
+                <div class="flex items-center justify-between mb-4 border-b border-zinc-800 pb-3">
+                    <h3 class="text-lg font-bold text-white flex items-center gap-2">🔍 Filtrar Veículos</h3>
+                    <button @click="limparFiltros()" class="text-xs text-red-500 hover:text-red-400 font-medium">Limpar Filtros</button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 font-semibold uppercase mb-1.5">Modelo</label>
+                        <input type="text" x-model="filtros.busca" placeholder="Buscar por modelo..." class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 font-semibold uppercase mb-1.5">Marca</label>
+                        <select x-model="filtros.marca" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition text-sm cursor-pointer">
+                            <option value="">Todas as Marcas</option>
+                            <template x-for="marca in marcasDisponiveis" :key="marca">
+                                <option :value="marca" x-text="marca"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 font-semibold uppercase mb-1.5">Câmbio</label>
+                        <select x-model="filtros.cambio" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition text-sm">
+                            <option value="">Todos</option>
+                            <option value="Automático (CVT)">Automático (CVT)</option>
+                            <option value="Automático">Automático</option>
+                            <option value="Manual">Manual</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 font-semibold uppercase mb-1.5">Preço Máximo</label>
+                        <select x-model="filtros.precoMax" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-500 transition text-sm">
+                            <option value="">Qualquer preço</option>
+                            <option value="90000">Até R$ 90.000</option>
+                            <option value="120000">Até R$ 120.000</option>
+                            <option value="150000">Até R$ 150.000</option>
+                        </select>
+                    </div>
+                </div>
+            </section>
+
+            <!-- GRID DA VITRINE -->
+            <section id="grade-carros">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold border-l-4 border-red-600 pl-3 uppercase tracking-wider text-white">Estoque Disponível</h2>
+                    <p class="text-gray-400 text-sm"><span class="text-red-500 font-bold" x-text="carrosFiltrados.length"></span> veículos encontrados</p>
+                </div>
+
+                <!-- Estado de Carregamento -->
+                <div x-show="carregando" class="text-center py-12">
+                    <p class="text-zinc-400 text-sm animate-pulse">Carregando ofertas em tempo real...</p>
+                </div>
+
+                <div x-show="!carregando && carrosFiltrados.length" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <template x-for="carro in carrosFiltrados" :key="carro.id">
+                        <div x-data="{ fotoCardIndex: 0 }" class="bg-zinc-950 border border-zinc-800 rounded-2xl overflow-hidden shadow-lg hover:border-red-600/50 transition duration-300 flex flex-col justify-between group card-glow animate-fade-up">
+                            
+                            <div class="relative overflow-hidden h-48 bg-zinc-900 group/img">
+                                <!-- Área Principal da Foto Clivável para Ver Detalhes -->
+                                <div class="w-full h-full cursor-pointer" @click="verDetalhes(carro)">
+                                    <template x-if="ehVideo(carro.fotos ? carro.fotos[fotoCardIndex] : '')">
+                                        <video :src="carro.fotos[fotoCardIndex]" class="w-full h-full object-cover" autoplay muted playsinline loop></video>
+                                    </template>
+                                    <template x-if="!ehVideo(carro.fotos ? carro.fotos[fotoCardIndex] : '')">
+                                        <img :src="carro.fotos && carro.fotos[fotoCardIndex] ? carro.fotos[fotoCardIndex] : 'placeholder.jpg'" :alt="carro.titulo" class="w-full h-full object-cover group-hover:scale-105 transition duration-500">
+                                    </template>
+                                </div>
+
+                                <!-- Setas de Navegação nos Cards (Multi-Foto ativo) -->
+                                <template x-if="carro.fotos && carro.fotos.length > 1">
+                                    <div>
+                                        <button @click.stop="fotoCardIndex = (fotoCardIndex === 0) ? carro.fotos.length - 1 : fotoCardIndex - 1" class="absolute left-2 top-1/2 -translate-y-1/2 bg-black/75 hover:bg-red-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs transition z-20 md:opacity-0 group-hover/img:opacity-100 shadow-md">
+                                            ❮
+                                        </button>
+                                        <button @click.stop="fotoCardIndex = (fotoCardIndex === carro.fotos.length - 1) ? 0 : fotoCardIndex + 1" class="absolute right-2 top-1/2 -translate-y-1/2 bg-black/75 hover:bg-red-600 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs transition z-20 md:opacity-0 group-hover/img:opacity-100 shadow-md">
+                                            ❯
+                                        </button>
+                                        
+                                        <!-- Indicador do Multi-Foto -->
+                                        <div class="absolute top-3 right-3 bg-black/80 backdrop-blur-sm text-[9px] text-zinc-300 px-1.5 py-0.5 rounded font-black tracking-wider uppercase border border-zinc-800">
+                                            Multi-Foto
+                                        </div>
+
+                                        <!-- Indicadores em Pontos (Dots) no Rodapé da Imagem -->
+                                        <div class="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20">
+                                            <template x-for="(foto, idx) in carro.fotos" :key="idx">
+                                                <span class="w-1.5 h-1.5 rounded-full transition-all" :class="fotoCardIndex === idx ? 'bg-red-600 scale-125' : 'bg-white/40'"></span>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <template x-if="ehVideo(carro.fotos ? carro.fotos[fotoCardIndex] : '')">
+                                    <div class="absolute bottom-2 right-2 bg-black/80 p-1.5 rounded-full text-xs z-10">🎥 Vídeo</div>
+                                </template>
+                                <div class="absolute top-3 left-3 flex gap-1 flex-wrap z-10">
+                                    <template x-for="tag in carro.tags">
+                                        <span class="text-[10px] font-extrabold uppercase px-2 py-1 rounded shadow text-white bg-red-600" x-text="tag"></span>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <div class="p-5 flex-grow flex flex-col justify-between">
+                                <div class="cursor-pointer" @click="verDetalhes(carro)">
+                                    <span class="text-xs font-bold uppercase tracking-wider text-blue-500" x-text="carro.marca"></span>
+                                    <h3 class="font-bold text-base text-white mt-0.5 line-clamp-1 group-hover:text-red-500 transition" x-text="carro.titulo"></h3>
+                                    <p class="text-gray-400 text-xs mt-1" x-text="carro.ano + ' • ' + formatarKm(carro.km)"></p>
+                                    
+                                    <div class="flex gap-2 mt-3">
+                                        <span class="bg-black text-[11px] px-2.5 py-1 rounded-md text-gray-300 border border-zinc-800" x-text="'⚙️ ' + carro.cambio"></span>
+                                        <span class="bg-black text-[11px] px-2.5 py-1 rounded-md text-gray-300 border border-zinc-800" x-text="'⛽ ' + carro.combustivel"></span>
+                                    </div>
+                                </div>
+
+                                <div class="mt-6 pt-4 border-t border-zinc-900">
+                                    <div class="text-xl font-black text-white" x-text="formatarMoeda(carro.preco)"></div>
+                                    <button @click="verDetalhes(carro)" class="w-full mt-4 bg-black hover:bg-red-600 hover:text-white border border-zinc-800 hover:border-red-600 text-gray-300 font-bold py-2.5 rounded-xl transition text-sm uppercase tracking-wider shine-btn">
+                                        Ficha Técnica
+                                    </button>
+                                </div>
+                            </div>
+
+                        </div>
+                    </template>
+                </div>
+                <div x-show="!carregando && carrosFiltrados.length === 0" class="bg-zinc-950 border border-zinc-800 rounded-2xl p-10 text-center">
+                    <div class="text-3xl mb-3">🔎</div>
+                    <h3 class="font-black text-white uppercase tracking-wider">Nenhum veículo encontrado</h3>
+                    <p class="text-sm text-zinc-400 mt-2">Tente limpar os filtros ou chamar a loja no WhatsApp para consultar novidades.</p>
+                    <button @click="limparFiltros()" class="mt-5 bg-red-600 hover:bg-red-700 px-5 py-3 rounded-xl text-xs font-bold uppercase">Limpar filtros</button>
+                </div>
+            </section>
+        </div>
+
+        <!-- PÁGINA: DETALHES -->
+        <div x-show="pagina === 'detalhes'" x-cloak x-transition>
+            <div class="mb-6">
+                <button @click="pagina = 'estoque'" class="text-sm text-gray-400 hover:text-red-500 flex items-center gap-1.5">
+                    ← Voltar para o estoque
+                </button>
+            </div>
+
+            <template x-if="carroSelecionado">
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 space-y-6">
+                        <div class="bg-zinc-900 border border-zinc-800 rounded-2xl overflow-hidden aspect-video relative shadow-xl group">
+                            <!-- Player de Vídeo ou Imagem nos Detalhes -->
+                            <template x-if="ehVideo(carroSelecionado.fotos ? carroSelecionado.fotos[fotoAtivaIndex] : '')">
+                                <video :src="carroSelecionado.fotos[fotoAtivaIndex]" class="w-full h-full object-contain" controls autoplay playsinline loop></video>
+                            </template>
+                            <template x-if="!ehVideo(carroSelecionado.fotos ? carroSelecionado.fotos[fotoAtivaIndex] : '')">
+                                <img :src="carroSelecionado.fotos && carroSelecionado.fotos[fotoAtivaIndex] ? carroSelecionado.fotos[fotoAtivaIndex] : 'placeholder.jpg'" class="w-full h-full object-cover">
+                            </template>
+
+                            <!-- Setas de Navegação (Apenas se houver mais de uma mídia) -->
+                            <template x-if="carroSelecionado.fotos && carroSelecionado.fotos.length > 1">
+                                <div>
+                                    <button @click="fotoAtivaIndex = (fotoAtivaIndex === 0) ? carroSelecionado.fotos.length - 1 : fotoAtivaIndex - 1" class="absolute left-3 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition backdrop-blur-sm z-10">
+                                        ❮
+                                    </button>
+                                    <button @click="fotoAtivaIndex = (fotoAtivaIndex === carroSelecionado.fotos.length - 1) ? 0 : fotoAtivaIndex + 1" class="absolute right-3 top-1/2 -translate-y-1/2 bg-black/70 hover:bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center transition backdrop-blur-sm z-10">
+                                        ❯
+                                    </button>
+                                    <!-- Contador de fotos discreto -->
+                                    <div class="absolute bottom-3 right-3 bg-black/70 backdrop-blur-sm text-white px-2.5 py-1 rounded-md text-xs font-bold tracking-wider">
+                                        <span x-text="fotoAtivaIndex + 1"></span> / <span x-text="carroSelecionado.fotos.length"></span>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+
+                        <!-- Carrossel de Miniaturas Clicáveis abaixo da foto principal -->
+                        <template x-if="carroSelecionado.fotos && carroSelecionado.fotos.length > 1">
+                            <div class="flex gap-2 overflow-x-auto pb-2 scrollbar-none">
+                                <template x-for="(foto, index) in carroSelecionado.fotos" :key="index">
+                                    <button @click="fotoAtivaIndex = index" 
+                                            class="w-20 h-14 rounded-lg overflow-hidden border-2 bg-zinc-900 shrink-0 transition"
+                                            :class="fotoAtivaIndex === index ? 'border-red-600 opacity-100 scale-95' : 'border-zinc-800 opacity-60 hover:opacity-90'">
+                                        <template x-if="ehVideo(foto)">
+                                            <div class="w-full h-full flex items-center justify-center text-zinc-400 text-xs bg-black">▶ Vid</div>
+                                        </template>
+                                        <template x-if="!ehVideo(foto)">
+                                            <img :src="foto" class="w-full h-full object-cover">
+                                        </template>
+                                    </button>
+                                </template>
+                            </div>
+                        </template>
+
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-6">
+                            <h3 class="text-lg font-bold border-l-4 border-red-600 pl-2.5 mb-4 text-white uppercase tracking-wider">Opcionais</h3>
+                            <template x-if="!carroSelecionado.opcionais || carroSelecionado.opcionais.length === 0">
+                                <p class="text-sm text-zinc-500">Opcionais não informados. Fale com um consultor para confirmar todos os detalhes.</p>
+                            </template>
+                            <div x-show="carroSelecionado.opcionais && carroSelecionado.opcionais.length" class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                                <template x-for="opcional in carroSelecionado.opcionais">
+                                    <div class="flex items-center gap-2 text-sm text-gray-300 bg-black p-2.5 rounded-xl border border-zinc-800/60">
+                                        <span class="text-red-500 text-xs">✓</span>
+                                        <span x-text="opcional"></span>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-6">
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-xl">
+                            <span class="bg-black border border-zinc-800 text-red-500 text-[11px] font-bold px-2.5 py-1 rounded-md uppercase" x-text="carroSelecionado.marca"></span>
+                            <h2 class="text-xl font-black mt-2 text-white" x-text="carroSelecionado.titulo"></h2>
+                            <div class="text-2xl font-black text-red-600 mt-4" x-text="formatarMoeda(carroSelecionado.preco)"></div>
+                            
+                            <div class="mt-6 space-y-2.5 text-sm">
+                                <div class="flex justify-between py-2 border-b border-zinc-800"><span class="text-gray-400">Ano</span><span class="font-medium text-white" x-text="carroSelecionado.ano"></span></div>
+                                <div class="flex justify-between py-2 border-b border-zinc-800"><span class="text-gray-400">KM</span><span class="font-medium text-white" x-text="formatarKm(carroSelecionado.km)"></span></div>
+                                <div class="flex justify-between py-2 border-b border-zinc-800"><span class="text-gray-400">Câmbio</span><span class="font-medium text-white" x-text="carroSelecionado.cambio"></span></div>
+                                <div class="flex justify-between py-2 border-b border-zinc-800"><span class="text-gray-400">Combustível</span><span class="font-medium text-white" x-text="carroSelecionado.combustivel"></span></div>
+                            </div>
+
+                            <div class="mt-8 space-y-3">
+                                <a :href="'https://wa.me/5567992639241?text=Olá! Quero mais informações sobre o ' + encodeURIComponent(carroSelecionado.titulo)" 
+                                   target="_blank" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl text-center block transition uppercase tracking-wider text-sm shadow-lg shadow-red-900/30">
+                                    💬 Falar com Consultor
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- BLOCO DE SIMULAÇÃO DENTRO DA FICHA TÉCNICA -->
+                        <div class="bg-zinc-950 border border-zinc-800 rounded-2xl p-6 shadow-xl mt-6">
+                            <h3 class="text-sm font-black uppercase tracking-wider text-white mb-4 border-l-4 border-red-600 pl-2">📋 Simular Financiamento Deste Veículo</h3>
+                            <form @submit.prevent="window.open('https://wa.me/5567992639241?text=' + encodeURIComponent('Olá! Quero simular o financiamento do ' + carroSelecionado.titulo + '\n\nNome: ' + document.getElementById('det_nome').value + '\nCPF: ' + document.getElementById('det_cpf').value + '\nEntrada Pretendida: ' + document.getElementById('det_entrada').value), '_blank')" class="space-y-4 text-xs">
+                                <div>
+                                    <label class="block text-gray-400 mb-1">Seu Nome Completo</label>
+                                    <input type="text" id="det_nome" required class="w-full bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-red-600 transition">
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-gray-400 mb-1">CPF</label>
+                                        <input type="text" id="det_cpf" required placeholder="000.000.000-00" oninput="let v = this.value.replace(/\D/g, ''); if(v.length > 11) v = v.slice(0, 11); if(v.length > 9) { v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4'); } else if(v.length > 6) { v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3'); } else if(v.length > 3) { v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2'); } this.value = v;" class="w-full bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-red-600 transition">
+                                    </div>
+                                    <div>
+                                        <label class="block text-gray-400 mb-1">Entrada Pretendida (R$)</label>
+                                        <input type="text" id="det_entrada" placeholder="R$ 10.000" oninput="let v = this.value.replace(/\D/g, ''); this.value = v ? 'R$ ' + parseInt(v).toLocaleString('pt-BR') : '';" class="w-full bg-black border border-zinc-800 rounded-xl px-3 py-2.5 text-white focus:outline-none focus:border-red-600 transition">
+                                    </div>
+                                </div>
+                                <button type="submit" class="w-full bg-zinc-900 hover:bg-red-600 text-white font-bold py-3 rounded-xl transition border border-zinc-800 hover:border-red-600 uppercase tracking-wider">Enviar Proposta de Simulação</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </template>
+        </div>
+
+        <!-- PÁGINA: FINANCIAMENTO -->
+        <div x-show="pagina === 'financiar'" x-cloak x-transition class="max-w-xl mx-auto">
+            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 md:p-8 shadow-2xl max-w-md mx-auto">
+                <h2 class="text-xl font-black text-white mb-6 tracking-wide flex items-center gap-2 uppercase">🏢 SIMULAÇÃO DE CRÉDITO</h2>
+                <form @submit.prevent="window.open('https://wa.me/5567992639241?text=' + encodeURIComponent('Olá! Enviei uma simulação de financiamento pelo site.\n\nNome: ' + document.getElementById('fin_nome').value + '\nCPF: ' + document.getElementById('fin_cpf').value + '\nWhatsApp: ' + document.getElementById('fin_whatsapp').value + '\nEntrada: ' + document.getElementById('fin_entrada').value + '\nParcelas: ' + document.getElementById('fin_parcelas').value), '_blank')" class="space-y-5 text-sm">
+                    <div>
+                        <label class="block text-gray-400 text-xs mb-1">Nome Completo</label>
+                        <input type="text" id="fin_nome" required class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-xs mb-1">CPF</label>
+                        <input type="text" id="fin_cpf" required placeholder="000.000.000-00" oninput="let v = this.value.replace(/\D/g, ''); if(v.length > 11) v = v.slice(0, 11); if(v.length > 9) { v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{1,2})$/, '$1.$2.$3-$4'); } else if(v.length > 6) { v = v.replace(/^(\d{3})(\d{3})(\d{1,3})$/, '$1.$2.$3'); } else if(v.length > 3) { v = v.replace(/^(\d{3})(\d{1,3})$/, '$1.$2'); } this.value = v;" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-xs mb-1">WhatsApp</label>
+                        <input type="tel" id="fin_whatsapp" required placeholder="(00) 99999-9999" oninput="let v = this.value.replace(/\D/g, ''); if(v.length > 11) v = v.slice(0, 11); if(v.length > 10) { v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3'); } else if(v.length > 6) { v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3'); } else if(v.length > 2) { v = v.replace(/^(\d{2})(\d{0,4})$/, '($1) $2'); } this.value = v;" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-400 text-xs mb-1">Valor de Entrada (R$)</label>
+                            <input type="text" id="fin_entrada" placeholder="R$ 20.000" oninput="let v = this.value.replace(/\D/g, ''); this.value = v ? 'R$ ' + parseInt(v).toLocaleString('pt-BR') : '';" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-xs mb-1">Preferência de Parcelas</label>
+                            <select id="fin_parcelas" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                                <option value="24x">24 Vezes</option>
+                                <option value="36x">36 Vezes</option>
+                                <option value="48x" selected>48 Vezes</option>
+                                <option value="60x">60 Vezes</option>
+                            </select>
+                        </div>
+                    </div>
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition uppercase tracking-wider text-sm mt-4">SIMULAR FINANCIAMENTO</button>
+                </form>
+            </div>
+
+</div>
+        </div>
+
+        <!-- PÁGINA: PARCEIROS (EXCLUSIVA) -->
+        <div x-show="pagina === 'parceiros'" x-cloak x-transition class="max-w-xl mx-auto">
+            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 md:p-8 shadow-2xl max-w-md mx-auto">
+                <h2 class="text-xl font-black text-white mb-2 tracking-wide flex items-center gap-2 uppercase">🤝 BANCOS PARCEIROS</h2>
+                <p class="text-xs text-zinc-400 mb-6">Trabalhamos em parceria com as maiores instituições financeiras do país para garantir as menores taxas do mercado.</p>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/bancopan.com.br" alt="Pan" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=bancopan.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Banco Pan</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/omni.com.br" alt="Omni" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=omni.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Omni Financeira</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/santander.com.br" alt="Santander" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=santander.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Santander</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/bradesco.com.br" alt="Bradesco" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=bradesco.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Bradesco</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/daycoval.com.br" alt="Daycoval" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=daycoval.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Daycoval</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/simpala.com.br" alt="Simpala" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=simpala.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Simpala</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/bancobv.com.br" alt="BV" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=bancobv.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">BV Financeira</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/c6bank.com.br" alt="C6" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=c6bank.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">C6 Bank</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/safra.com.br" alt="Safra" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=safra.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Banco Safra</span>
+                    </div>
+                    <div class="bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/vwfs.com.br" alt="VW" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=vwfs.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Volkswagen</span>
+                    </div>
+                    <div class="col-span-2 bg-black border border-zinc-800/80 rounded-xl p-3 flex items-center justify-center gap-2.5 hover:border-zinc-700 transition">
+                        <div class="w-7 h-7 rounded-md bg-white flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                            <img src="https://logo.clearbit.com/itau.com.br" alt="Itaú" class="w-full h-full object-contain" onerror="this.src='https://www.google.com/s2/favicons?sz=64&domain=itau.com.br'">
+                        </div>
+                        <span class="text-xs font-bold uppercase tracking-tight text-white">Itaú Financiamentos</span>
+                    </div>
+                </div>
+                
+                <div class="mt-6 bg-zinc-900/40 border border-zinc-800/60 rounded-xl p-4 text-center">
+                    <p class="text-xs text-zinc-400">Gostou das opções? Faça uma simulação rápida agora mesmo.</p>
+                    <button @click="pagina = 'financiar'" class="mt-3 inline-block bg-red-600 hover:bg-red-700 text-white text-xs font-black px-4 py-2 rounded-lg transition uppercase tracking-wider">Simular Crédito ➔</button>
+                </div>
+            </div>
+        </div>
+
+                <!-- PÁGINA: VENDA SEU CARRO -->
+        <div x-show="pagina === 'vender'" x-cloak x-transition class="max-w-xl mx-auto">
+            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 md:p-8 shadow-2xl max-w-md mx-auto">
+                <h2 class="text-xl font-black text-white mb-6 tracking-wide uppercase">🚗 Venda Seu Carro</h2>
+                <form @submit.prevent="window.open('https://wa.me/5567992639241?text=' + encodeURIComponent('Olá! Quero vender meu carro.\n\nModelo: ' + $event.target[0].value + '\nAno: ' + $event.target[1].value + '\nKM: ' + $event.target[2].value + '\nWhatsApp: ' + $event.target[3].value), '_blank')" class="space-y-5 text-sm">
+                    <div>
+                        <label class="block text-gray-400 text-xs mb-1">Modelo do Veículo</label>
+                        <input type="text" required placeholder="Ex: Civic 2.0 EXL" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-gray-400 text-xs mb-1">Ano</label>
+                            <input type="text" required placeholder="2020/2021" oninput="let v = this.value.replace(/\D/g, ''); if(v.length > 8) v = v.slice(0, 8); if(v.length > 4) { v = v.replace(/^(\d{4})(\d{1,4})$/, '$1/$2'); } this.value = v;" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                        </div>
+                        <div>
+                            <label class="block text-gray-400 text-xs mb-1">KM Atual</label>
+                            <input type="text" required placeholder="Ex: 45.000" oninput="let v = this.value.replace(/\D/g, ''); v = Number(v).toLocaleString('pt-BR'); this.value = v === '0' ? '' : v;" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-gray-400 text-xs mb-1">WhatsApp</label>
+                        <input type="tel" required placeholder="(00) 99999-9999" oninput="let v = this.value.replace(/\D/g, ''); if(v.length > 11) v = v.slice(0, 11); if(v.length > 10) { v = v.replace(/^(\d{2})(\d{5})(\d{4})$/, '($1) $2-$3'); } else if(v.length > 6) { v = v.replace(/^(\d{2})(\d{4})(\d{0,4})$/, '($1) $2-$3'); } else if(v.length > 2) { v = v.replace(/^(\d{2})(\d{0,4})$/, '($1) $2'); } this.value = v;" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                    </div>
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3.5 rounded-xl transition uppercase tracking-wider text-sm mt-4">SOLICITAR AVALIAÇÃO</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- AREA EXCLUSIVA: TELA DE LOGIN DO ADMIN -->
+        <div x-show="pagina === 'login_admin'" x-cloak x-transition class="min-h-[60vh] flex items-center justify-center px-4">
+            <div class="bg-zinc-950 border border-zinc-900 p-8 rounded-2xl w-full max-w-md shadow-2xl">
+                <h2 class="text-xl font-black uppercase tracking-wide mb-6 text-center text-red-500">Acesso Restrito Vendedores</h2>
+                <form @submit.prevent="efetuarLogin()" class="space-y-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Login do Vendedor</label>
+                        <input type="text" x-model="loginInput" placeholder="Digite o login" autocomplete="username" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Senha de Autenticação</label>
+                        <input type="password" x-model="senhaInput" placeholder="Digite a senha da loja" autocomplete="current-password" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                    </div>
+                    <p x-show="erroLogin" class="text-xs text-red-500 font-bold" x-text="erroLogin"></p>
+                    <div class="flex gap-2">
+                        <button type="button" @click="pagina = 'estoque'" class="w-1/2 bg-zinc-900 hover:bg-zinc-800 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider transition">Cancelar</button>
+                        <button type="submit" class="w-1/2 bg-red-600 hover:bg-red-700 font-bold py-3.5 rounded-xl uppercase text-xs tracking-wider transition">Entrar</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- AREA EXCLUSIVA: PAINEL ADMINISTRATIVO INTERNO -->
+        <div x-show="pagina === 'admin'" x-cloak x-transition class="max-w-4xl mx-auto space-y-8">
+            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-xl">
+                <div class="flex justify-between items-center mb-6 border-b border-zinc-900 pb-3">
+                    <h1 class="text-lg font-black uppercase tracking-wider text-red-500">🚗 Painel Gerenciador de Estoque</h1>
+                    <button @click="logoutAdmin()" class="text-xs bg-zinc-900 hover:bg-red-600 px-3 py-1.5 rounded-lg transition text-white">Sair do Painel</button>
+                </div>
+                
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-black uppercase tracking-wider text-white" x-text="editandoId ? '✏️ Editar Anúncio' : '➕ Cadastrar Novo Anúncio'"></h2>
+                        <p class="text-xs text-zinc-500 mt-1" x-text="editandoId ? 'Altere os dados abaixo e salve as mudanças.' : 'Preencha os dados para publicar um veículo no estoque.'"></p>
+                    </div>
+                    <button x-show="editandoId" type="button" @click="cancelarEdicao()" class="bg-zinc-900 hover:bg-zinc-800 border border-zinc-800 text-zinc-300 px-3 py-2 rounded-xl text-xs font-bold transition">Cancelar edição</button>
+                </div>
+
+                <form @submit.prevent="publicarCarro" class="space-y-5 text-sm">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Marca</label>
+                            <select x-model="carro.marca" required class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white">
+<option value="">Selecione a marca</option>
+                                <template x-for="marca in marcasDisponiveis" :key="marca">
+                                    <option :value="marca" x-text="marca"></option>
+                                </template>
+</select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Modelo / Versão Completa</label>
+                            <input type="text" x-model="carro.titulo" required placeholder="Ex: Civic 2.0 EXL CVT" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Preço Venda (R$)</label>
+                            <input type="text" x-model="precoFormatado" x-on:input="let v = precoFormatado.replace(/\D/g, ''); carro.preco = v ? parseInt(v) : null; precoFormatado = carro.preco ? 'R$ ' + carro.preco.toLocaleString('pt-BR') : '';" required placeholder="R$ 115.900" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Ano / Modelo</label>
+                            <input type="text" x-model="carro.ano" required placeholder="2020/2021" oninput="let v = this.value.replace(/\D/g, ''); if(v.length > 8) v = v.slice(0, 8); if(v.length > 4) { v = v.replace(/^(\d{4})(\d{1,4})$/, '$1/$2'); } this.value = v;" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">KM Rodados</label>
+                            <input type="text" x-model="kmFormatado" x-on:input="let v = kmFormatado.replace(/\D/g, ''); carro.km = v ? parseInt(v) : null; kmFormatado = carro.km ? carro.km.toLocaleString('pt-BR') : '';" required placeholder="45.000" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Tipo de Câmbio</label>
+                            <select x-model="carro.cambio" required class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                                <option value="">Selecione</option>
+                                <option>Manual</option>
+                                <option>Automático</option>
+                                <option>Automático (CVT)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1">Combustível</label>
+                            <select x-model="carro.combustivel" required class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                                <option value="">Selecione</option>
+                                <option>Flex</option>
+                                <option>Gasolina</option>
+                                <option>Diesel</option>
+                                <option>Híbrido</option>
+                                <option>Elétrico</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Opcionais do Carro (Separados por vírgula)</label>
+                        <input type="text" x-model="opcionaisTexto" placeholder="Teto Solar, Bancos de Couro, Sensor de Ré" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-red-600 transition">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1">Fotos/Vídeos do Veículo</label>
+                        <input type="file" accept="image/*,video/*" multiple @change="selecionarArquivo" class="w-full bg-black border border-zinc-800 rounded-xl px-4 py-3 text-zinc-400">
+                        <p class="text-[11px] text-zinc-500 mt-1" x-text="editandoId ? 'Na edição, deixe vazio para manter as fotos atuais. Se escolher novos arquivos, eles substituem as fotos do anúncio.' : 'Adicione uma ou mais fotos/vídeos para publicar o anúncio.'"></p>
+                    </div>
+
+                    <button type="submit" :disabled="enviando" class="w-full bg-red-600 hover:bg-red-700 disabled:bg-zinc-800 text-white font-bold py-4 rounded-xl uppercase text-xs tracking-wider transition">
+                        <span x-show="!enviando" x-text="editandoId ? '💾 Salvar Alterações do Anúncio' : '🚀 Publicar e Atualizar Vitrine'"></span>
+                        <span x-show="enviando" x-text="editandoId ? '⏳ Atualizando anúncio...' : '⏳ Salvando veículo e mídia... Aguarde'"></span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- NOVA SEÇÃO: GERENCIAR E REMOVER VEÍCULOS -->
+            <div class="bg-zinc-950 border border-zinc-900 rounded-2xl p-6 shadow-xl">
+                <h3 class="text-base font-black uppercase tracking-wider text-white mb-4 border-b border-zinc-900 pb-2">📋 Gerenciar Veículos Cadastrados</h3>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm text-zinc-300">
+                        <thead>
+                            <tr class="border-b border-zinc-800 text-zinc-400 text-xs font-bold uppercase">
+                                <th class="py-3 px-4">Miniatura</th>
+                                <th class="py-3 px-4">Veículo</th>
+                                <th class="py-3 px-4">Preço</th>
+                                <th class="py-3 px-4 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="carro in estoque" :key="carro.id">
+                                <tr class="border-b border-zinc-900/60 hover:bg-zinc-900/20 transition">
+                                    <td class="py-3 px-4">
+                                        <template x-if="ehVideo(carro.fotos ? carro.fotos[0] : '')">
+                                            <div class="h-12 w-20 flex items-center justify-center bg-zinc-900 border border-zinc-800 rounded-lg text-xs text-zinc-400 font-bold">🎥 VÍDEO</div>
+                                        </template>
+                                        <template x-if="!ehVideo(carro.fotos ? carro.fotos[0] : '')">
+                                            <img :src="carro.fotos && carro.fotos[0] ? carro.fotos[0] : 'placeholder.jpg'" class="h-12 w-20 object-cover rounded-lg border border-zinc-800">
+                                        </template>
+                                    </td>
+                                    <td class="py-3 px-4 font-medium text-white">
+                                        <div x-text="carro.titulo"></div>
+                                        <div class="text-xs text-zinc-500" x-text="carro.marca + ' • ' + carro.ano"></div>
+                                    </td>
+                                    <td class="py-3 px-4 text-white font-bold" x-text="formatarMoeda(carro.preco)"></td>
+                                    <td class="py-3 px-4 text-center">
+                                        <div class="flex justify-center gap-2 flex-wrap">
+                                            <button @click="editarCarro(carro)" class="bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white border border-blue-600/20 font-bold px-3 py-1.5 rounded-lg text-xs transition duration-200">
+                                                ✏️ Editar
+                                            </button>
+                                            <button @click="removerCarro(carro.id)" class="bg-red-600/10 hover:bg-red-600 text-red-500 hover:text-white border border-red-600/20 font-bold px-3 py-1.5 rounded-lg text-xs transition duration-200">
+                                                ❌ Excluir
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                            <template x-if="estoque.length === 0">
+                                <tr>
+                                    <td colspan="4" class="text-center py-8 text-zinc-500 text-xs">Nenhum veículo no estoque.</td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <a href="https://wa.me/5567992639241?text=Olá! Vim pelo site da Renovação Veículos." target="_blank" class="fixed bottom-5 right-5 z-50 bg-green-600 hover:bg-green-500 text-white rounded-full shadow-2xl shadow-green-900/50 px-5 py-3 font-black text-sm flex items-center gap-2 border border-green-400/30">
+        💬 <span class="hidden sm:inline">WhatsApp</span>
+    </a>
+
+    <!-- FOOTER COM ACESSO DISCRETO AO ADMIN -->
+    <footer class="bg-black text-gray-500 text-xs py-10 mt-20 border-t border-zinc-900 text-center">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-2">
+            <p class="font-bold text-white uppercase tracking-widest text-sm"><span class="text-red-500">📍</span> RENOVAÇÃO VEÍCULOS</p>
+            <p class="text-zinc-400 text-xs">Av. Bandeirantes, 3319 — Campo Grande / MS</p>
+            <div class="pt-4 border-t border-zinc-900/40 mt-4 flex justify-between items-center px-4 max-w-sm mx-auto">
+                <span>© 2026 Renovação Veículos.</span>
+                <!-- Botão invisível/discreto para os vendedores clicarem e abrirem a tela de login -->
+                <button @click="abrirAdmin()" class="text-zinc-800 hover:text-zinc-600 transition font-medium text-[10px] uppercase tracking-wider">🔒 Área Interna</button>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // CONFIGURAÇÃO DO SUPABASE
+        const SUPABASE_URL = "https://kcolomrzfulxqlltzscv.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_lsT7BMskxpq7F32i4kmtbw_Dyu1zaKZ";
+        
+        // SENHA MESTRE PARA OS VENDEDORES POSTAREM
+        const LOGIN_HASH = "8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918"; // login padrão: admin
+        const SENHA_HASH = "1e6dda1f182cbfa1d33172e77362c40c4b28c42369b39e62984a487bb7e7e130";
+
+        // Criação de cliente global único e definitivo para evitar escopos não definidos
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        function app() {
+            return {
+                ehVideo(url) {
+                    if (!url) return false;
+                    const urlLimpa = url.split('?')[0].toLowerCase();
+                    return urlLimpa.includes('.mp4') || urlLimpa.includes('.mov') || urlLimpa.includes('.webm') || urlLimpa.includes('.m4v') || urlLimpa.includes('.3gp');
+                },
+                pagina: 'estoque',
+                mobileMenuAberto: false,
+                fotoAtivaIndex: 0,
+                carroSelecionado: null,
+                carregando: true,
+                filtros: { busca: '', marca: '', cambio: '', precoMax: '' },
+                estoque: [],
+                marcasBase: [
+                    'Agrale', 'Alfa Romeo', 'Asia Motors', 'Aston Martin', 'Audi',
+                    'BMW', 'BYD', 'Caoa Chery', 'Changan', 'Chery', 'Chevrolet', 'Chrysler', 'Citroën',
+                    'Dodge', 'Effa', 'Ferrari', 'Fiat', 'Ford', 'Foton',
+                    'GWM', 'Honda', 'Hyundai', 'Iveco', 'JAC', 'Jaguar', 'Jeep',
+                    'Kia', 'Lamborghini', 'Land Rover', 'Lexus', 'Lifan',
+                    'Maserati', 'Mercedes-Benz', 'Mini', 'Mitsubishi',
+                    'Nissan', 'Peugeot', 'Porsche', 'Ram', 'Renault',
+                    'Subaru', 'Suzuki', 'Toyota', 'Troller', 'Volkswagen', 'Volvo'
+                ],
+                aliasesMarcas: {
+                    'vw': 'Volkswagen',
+                    'volks': 'Volkswagen',
+                    'volkswagen': 'Volkswagen',
+                    'chev': 'Chevrolet',
+                    'chevrolet': 'Chevrolet',
+                    'gm': 'Chevrolet',
+                    'mercedes': 'Mercedes-Benz',
+                    'mercedes benz': 'Mercedes-Benz',
+                    'mercedes-benz': 'Mercedes-Benz',
+                    'caoa': 'Caoa Chery',
+                    'caoa chery': 'Caoa Chery',
+                    'chery': 'Chery',
+                    'land rover': 'Land Rover',
+                    'range rover': 'Land Rover',
+                    'mini cooper': 'Mini'
+                },
+                limparTextoMarca(valor) {
+                    return String(valor || '')
+                        .trim()
+                        .normalize('NFD')
+                        .replace(/[\u0300-\u036f]/g, '')
+                        .replace(/[^a-zA-Z0-9]+/g, ' ')
+                        .replace(/\s+/g, ' ')
+                        .toLowerCase();
+                },
+                normalizarMarca(valor) {
+                    if (!valor) return '';
+                    const chave = this.limparTextoMarca(valor);
+                    const alias = this.aliasesMarcas[chave];
+                    if (alias) return alias;
+
+                    const encontrada = this.marcasBase.find(m => this.limparTextoMarca(m) === chave);
+                    if (encontrada) return encontrada;
+
+                    return String(valor).trim().replace(/\s+/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                },
+                get marcasDisponiveis() {
+                    const mapa = new Map();
+                    [...this.marcasBase, ...this.estoque.map(c => c.marca).filter(Boolean)].forEach(marca => {
+                        const nome = this.normalizarMarca(marca);
+                        const chave = this.limparTextoMarca(nome);
+                        if (nome && !mapa.has(chave)) mapa.set(chave, nome);
+                    });
+                    return Array.from(mapa.values()).sort((a, b) => a.localeCompare(b, 'pt-BR'));
+                },
+
+                
+                // Variáveis do Painel Admin integrado
+                loginInput: '',
+                senhaInput: '',
+                erroLogin: '',
+                enviando: false,
+                opcionaisTexto: '',
+                arquivosSelecionados: [],
+                editandoId: null,
+                carro: { titulo: '', marca: '', ano: '', preco: null, km: null, cambio: '', combustivel: '', fotos: [] }, precoFormatado: '', kmFormatado: '',
+                
+                async init() {
+                    await this.atualizarEstoqueDoBanco();
+                },
+                async atualizarEstoqueDoBanco() {
+                    this.carregando = true;
+                    try {
+                        const { data, error } = await supabaseClient
+                            .from('carros')
+                            .select('*')
+                            .order('id', { ascending: false });
+                        
+                        if (!error && data) {
+                            this.estoque = data.map(c => ({
+                                ...c,
+                                marca: this.normalizarMarca(c.marca),
+                                fotos: Array.isArray(c.fotos) ? c.fotos : (c.foto ? [c.foto] : []),
+                                opcionais: Array.isArray(c.opcionais) ? c.opcionais : [],
+                                tags: Array.isArray(c.tags) ? c.tags : []
+                            }));
+                        }
+                    } catch (e) {
+                        console.error(e);
+                    } finally {
+                        this.carregando = false;
+                    }
+                },
+                get carrosFiltrados() {
+                    return this.estoque.filter(carro => {
+                        const mBusca = this.filtros.busca === '' || (carro.titulo && carro.titulo.toLowerCase().includes(this.filtros.busca.toLowerCase()));
+                        const mMarca = this.filtros.marca === '' || this.normalizarMarca(carro.marca) === this.normalizarMarca(this.filtros.marca);
+                        const mCambio = this.filtros.cambio === '' || carro.cambio === this.filtros.cambio;
+                        const mPreco = this.filtros.precoMax === '' || carro.preco <= parseInt(this.filtros.precoMax);
+                        return mBusca && mMarca && mCambio && mPreco;
+                    });
+                },
+                verDetalhes(carro) {
+                    this.carroSelecionado = carro;
+                    this.fotoAtivaIndex = 0;
+                    this.pagina = 'detalhes';
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                limparFiltros() { this.filtros.busca = ''; this.filtros.marca = ''; this.filtros.cambio = ''; this.filtros.precoMax = ''; },
+                formatarMoeda(valor) { 
+                    if (!valor) return 'R$ 0,00';
+                    let n = typeof valor === 'number' ? valor : parseInt(valor.toString().replace(/\D/g, ''));
+                    return isNaN(n) ? 'R$ 0,00' : 'R$ ' + n.toLocaleString('pt-BR');
+                },
+                formatarKm(valor) {
+                    if (!valor && valor !== 0) return '0 km';
+                    let n = typeof valor === 'number' ? valor : parseInt(valor.toString().replace(/\D/g, ''));
+                    return isNaN(n) ? '0 km' : n.toLocaleString('pt-BR') + ' km';
+                },
+                scrollParaEstoque() {
+                    const alvo = document.getElementById('grade-carros') || document.getElementById('filtro-secao');
+                    if (alvo) alvo.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                },
+                
+                // Funções do Painel Admin
+                abrirAdmin() {
+                    const token = localStorage.getItem('admin_token');
+                    if (token === 'true') {
+                        this.pagina = 'admin';
+                    } else {
+                        this.loginInput = '';
+                        this.senhaInput = '';
+                        this.erroLogin = '';
+                        this.pagina = 'login_admin';
+                    }
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+                async efetuarLogin() {
+                    const gerarHash = async (valor) => {
+                        const texto = new TextEncoder().encode((valor || '').trim());
+                        const hashBuffer = await crypto.subtle.digest('SHA-256', texto);
+                        const hashArray = Array.from(new Uint8Array(hashBuffer));
+                        return hashArray.map(b => b.toString(16).padStart(2,'0')).join('');
+                    };
+
+                    const loginHash = await gerarHash(this.loginInput);
+                    const senhaHash = await gerarHash(this.senhaInput);
+
+                    if (loginHash === LOGIN_HASH && senhaHash === SENHA_HASH) {
+                        localStorage.setItem('admin_token', 'true');
+                        this.erroLogin = '';
+                        this.pagina = 'admin';
+                    } else {
+                        this.erroLogin = 'Login ou senha incorretos!';
+                    }
+                },
+                logoutAdmin() {
+                    localStorage.removeItem('admin_token');
+                    this.pagina = 'estoque';
+                },
+                selecionarArquivo(e) { this.arquivosSelecionados = Array.from(e.target.files); },
+                
+                async publicarCarro() {
+                    if (!this.editandoId && (!this.arquivosSelecionados || this.arquivosSelecionados.length === 0)) {
+                        return alert('Por favor, adicione pelo menos uma foto ou vídeo!');
+                    }
+                    this.enviando = true;
+
+                    try {
+                        let urlsMidias = Array.isArray(this.carro.fotos) ? [...this.carro.fotos] : [];
+
+                        // Se selecionar novas fotos/vídeos durante a edição, elas substituem as mídias antigas.
+                        if (this.arquivosSelecionados && this.arquivosSelecionados.length > 0) {
+                            urlsMidias = [];
+                            for (let arquivo of this.arquivosSelecionados) {
+                                const nomeArquivo = `${Date.now()}_${arquivo.name}`;
+                                const { error: uploadError } = await supabaseClient.storage
+                                    .from('fotos-carros')
+                                    .upload(nomeArquivo, arquivo);
+
+                                if (uploadError) throw uploadError;
+
+                                const { data: urlData } = supabaseClient.storage
+                                    .from('fotos-carros')
+                                    .getPublicUrl(nomeArquivo);
+
+                                urlsMidias.push(urlData.publicUrl);
+                            }
+                        }
+
+                        const listaOpcionais = this.opcionaisTexto ? this.opcionaisTexto.split(',').map(i => i.trim()).filter(Boolean) : [];
+                        const dadosCarro = {
+                            titulo: this.carro.titulo,
+                            marca: this.normalizarMarca(this.carro.marca),
+                            ano: this.carro.ano,
+                            preco: this.carro.preco,
+                            km: this.carro.km,
+                            cambio: this.carro.cambio,
+                            combustivel: this.carro.combustivel,
+                            fotos: urlsMidias,
+                            opcionais: listaOpcionais,
+                            tags: this.editandoId ? (this.carro.tags || ["Novidade"]) : ["Novidade"]
+                        };
+
+                        let resultado;
+                        if (this.editandoId) {
+                            resultado = await supabaseClient
+                                .from('carros')
+                                .update(dadosCarro)
+                                .eq('id', this.editandoId);
+                        } else {
+                            resultado = await supabaseClient
+                                .from('carros')
+                                .insert([dadosCarro]);
+                        }
+
+                        if (resultado.error) throw resultado.error;
+
+                        alert(this.editandoId ? 'Anúncio atualizado com sucesso!' : 'Veículo publicado com sucesso!');
+                        this.resetarFormularioAdmin();
+                        await this.atualizarEstoqueDoBanco();
+                    } catch (error) {
+                        alert('Erro ao salvar dados: ' + error.message);
+                    } finally {
+                        this.enviando = false;
+                    }
+                },
+
+                editarCarro(carro) {
+                    this.editandoId = carro.id;
+                    this.carro = {
+                        ...carro,
+                        marca: this.normalizarMarca(carro.marca),
+                        fotos: Array.isArray(carro.fotos) ? [...carro.fotos] : []
+                    };
+                    this.precoFormatado = carro.preco ? 'R$ ' + Number(carro.preco).toLocaleString('pt-BR') : '';
+                    this.kmFormatado = carro.km ? Number(carro.km).toLocaleString('pt-BR') : '';
+                    this.opcionaisTexto = Array.isArray(carro.opcionais) ? carro.opcionais.join(', ') : '';
+                    this.arquivosSelecionados = [];
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                cancelarEdicao() {
+                    this.resetarFormularioAdmin();
+                },
+
+                resetarFormularioAdmin() {
+                    this.editandoId = null;
+                    this.carro = { titulo: '', marca: '', ano: '', preco: null, km: null, cambio: '', combustivel: '', fotos: [] };
+                    this.precoFormatado = '';
+                    this.kmFormatado = '';
+                    this.opcionaisTexto = '';
+                    this.arquivosSelecionados = [];
+                    const inputArquivo = document.querySelector('input[type="file"]');
+                    if (inputArquivo) inputArquivo.value = '';
+                },
+
+                // FUNÇÃO ESSENCIAL: REMOVER O VEÍCULO DO SITE
+                async removerCarro(id) {
+                    if (!confirm('Tem certeza de que deseja excluir permanentemente este veículo do estoque?')) return;
+                    
+                    try {
+                        const { error } = await supabaseClient
+                            .from('carros')
+                            .delete()
+                            .eq('id', id);
+
+                        if (error) throw error;
+
+                        alert('Veículo removido com sucesso!');
+                        await this.atualizarEstoqueDoBanco();
+                    } catch (error) {
+                        alert('Erro ao remover o veículo: ' + error.message);
+                    }
+                }
+            }
+        }
+    </script>
+</body>
+</html>
