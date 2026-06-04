@@ -90,6 +90,279 @@
             main { padding-top: 1rem !important; }
             .mobile-tight { padding-left: 1rem !important; padding-right: 1rem !important; }
         }
+
+
+        /* ===== Ajustes completos para tablet e celular ===== */
+        :root { --nav-h-mobile: 76px; }
+        img, video { max-width: 100%; }
+        button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+
+        @media (max-width: 1024px) {
+            body { overflow-x: hidden; }
+            main { max-width: 100% !important; padding-left: 1rem !important; padding-right: 1rem !important; }
+
+            /* Navbar tablet/mobile */
+            nav .h-20, nav .md\:h-24 { min-height: 72px; height: auto !important; padding-top: .8rem; padding-bottom: .8rem; }
+            nav .text-xl { font-size: 1.12rem !important; }
+            nav .md\:text-2xl { font-size: 1.15rem !important; }
+
+            /* Hero */
+            .hero-real {
+                min-height: 610px !important;
+                border-radius: 1.4rem !important;
+                margin-bottom: 1.45rem !important;
+            }
+            .hero-bg {
+                background-position: 62% center !important;
+                animation: none !important;
+                transform: scale(1.01) !important;
+            }
+            .hero-real > .relative {
+                max-width: 520px !important;
+                padding: 2.25rem 1.6rem !important;
+            }
+            .hero-real h1 {
+                font-size: clamp(2.35rem, 7vw, 4.3rem) !important;
+            }
+
+            /* Cards e grids */
+            #grade-carros .grid { gap: 1rem !important; }
+            .card-glow { border-radius: 1rem !important; }
+            .card-glow .h-48 { height: 13.5rem !important; }
+
+            /* Detalhes do veículo */
+            [x-show="pagina === 'detalhes'"] .grid { gap: 1.25rem !important; }
+            [x-show="pagina === 'detalhes'"] .aspect-video { border-radius: 1rem !important; }
+
+            /* Admin */
+            [x-show="pagina === 'admin'"] { padding-left: .25rem !important; padding-right: .25rem !important; }
+            [x-show="pagina === 'admin'"] table { min-width: 680px; }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                background:
+                    radial-gradient(circle at 18% 0%, rgba(220, 38, 38, .12), transparent 22rem),
+                    radial-gradient(circle at 90% 5%, rgba(37, 99, 235, .10), transparent 20rem),
+                    #000000;
+            }
+
+            main { padding-top: 1rem !important; padding-bottom: 1rem !important; }
+
+            /* Navbar */
+            nav { position: sticky !important; top: 0 !important; }
+            nav .max-w-7xl { padding-left: 1rem !important; padding-right: 1rem !important; }
+            nav .flex.items-center.justify-between { gap: .75rem !important; }
+            nav .font-black.uppercase { line-height: 1 !important; letter-spacing: -.04em !important; }
+            nav button[\@click="mobileMenuAberto = !mobileMenuAberto"] {
+                width: 46px !important;
+                height: 46px !important;
+                border-radius: .95rem !important;
+                flex: 0 0 46px !important;
+            }
+            nav [x-show="mobileMenuAberto"] a { font-size: .92rem !important; }
+
+            /* Hero mobile */
+            .hero-real {
+                min-height: auto !important;
+                height: auto !important;
+                display: block !important;
+                border-radius: 1.15rem !important;
+                overflow: hidden !important;
+                margin-bottom: 1rem !important;
+            }
+            .hero-real::before {
+                content: "";
+                display: block;
+                height: 235px;
+            }
+            .hero-real .hero-bg {
+                height: 235px !important;
+                bottom: auto !important;
+                background-size: cover !important;
+                background-position: 63% center !important;
+                filter: saturate(1.05) contrast(1.02) !important;
+            }
+            .hero-real > .absolute:nth-of-type(2),
+            .hero-real > .absolute:nth-of-type(3) {
+                background: linear-gradient(to bottom, rgba(0,0,0,.08), #000 96%) !important;
+            }
+            .hero-real > .relative {
+                max-width: 100% !important;
+                padding: 1.25rem 1rem 1.35rem !important;
+                background: linear-gradient(180deg, rgba(0,0,0,.95), rgba(0,0,0,.98));
+            }
+            .hero-real .inline-flex.rounded-full {
+                font-size: .72rem !important;
+                padding: .5rem .9rem !important;
+                margin-bottom: .75rem !important;
+            }
+            .hero-real h1 {
+                font-size: clamp(2rem, 10vw, 3.1rem) !important;
+                line-height: 1.02 !important;
+            }
+            .hero-real p {
+                font-size: .96rem !important;
+                line-height: 1.55 !important;
+                margin-top: .9rem !important;
+            }
+            .hero-real .grid.grid-cols-3.gap-3 {
+                gap: .55rem !important;
+                margin-top: 1rem !important;
+            }
+            .hero-real .grid.grid-cols-3.gap-3 > div {
+                padding: .75rem .35rem !important;
+                border-radius: .9rem !important;
+            }
+            .hero-real .grid.grid-cols-3.gap-3 .text-2xl { font-size: 1.2rem !important; }
+            .hero-real .grid.grid-cols-3.gap-3 p { font-size: .62rem !important; line-height: 1.2 !important; margin-top: .15rem !important; }
+            .hero-real button {
+                width: 100% !important;
+                justify-content: center !important;
+                margin-top: 1rem !important;
+                padding: .95rem 1rem !important;
+                border-radius: 1rem !important;
+                font-size: .86rem !important;
+            }
+            .hero-real .mt-10.grid.grid-cols-3 {
+                margin-top: 1.15rem !important;
+                gap: .65rem !important;
+            }
+            .hero-real .mt-10.grid.grid-cols-3 p:first-child { font-size: 1.45rem !important; }
+            .hero-real .mt-10.grid.grid-cols-3 p:last-child { font-size: .6rem !important; line-height: 1.2 !important; }
+
+            /* Filtros */
+            #filtro-secao {
+                padding: 1rem !important;
+                border-radius: 1rem !important;
+                margin-bottom: 1.25rem !important;
+            }
+            #filtro-secao .flex.items-center.justify-between {
+                align-items: flex-start !important;
+                gap: .75rem !important;
+            }
+            #filtro-secao h3 { font-size: 1rem !important; }
+            #filtro-secao button { white-space: nowrap; }
+            input, select, textarea { font-size: 16px !important; }
+
+            /* Estoque */
+            #grade-carros > .flex.justify-between {
+                align-items: flex-start !important;
+                gap: .5rem !important;
+                flex-direction: column !important;
+                margin-bottom: 1rem !important;
+            }
+            #grade-carros h2 { font-size: 1rem !important; }
+            #grade-carros .grid { grid-template-columns: 1fr !important; gap: 1rem !important; }
+            .card-glow .relative.overflow-hidden.h-48 { height: 230px !important; }
+            .card-glow .p-5 { padding: 1rem !important; }
+            .card-glow h3 { font-size: 1.05rem !important; white-space: normal !important; }
+            .card-glow .flex.gap-2.mt-3 { flex-wrap: wrap !important; }
+            .card-glow button { min-height: 46px !important; }
+
+            /* Detalhes */
+            [x-show="pagina === 'detalhes'"] .grid { grid-template-columns: 1fr !important; }
+            [x-show="pagina === 'detalhes'"] .aspect-video {
+                aspect-ratio: 4/3 !important;
+                border-radius: 1rem !important;
+            }
+            [x-show="pagina === 'detalhes'"] .grid.grid-cols-2 { grid-template-columns: 1fr !important; }
+            [x-show="pagina === 'detalhes'"] .flex.gap-2 { flex-wrap: wrap !important; }
+            [x-show="pagina === 'detalhes'"] button { min-height: 44px !important; }
+
+            /* Páginas de formulário */
+            [x-show="pagina === 'financiar'"],
+            [x-show="pagina === 'parceiros'"],
+            [x-show="pagina === 'vender'"] {
+                max-width: 100% !important;
+            }
+            [x-show="pagina === 'financiar'"] > div,
+            [x-show="pagina === 'parceiros'"] > div,
+            [x-show="pagina === 'vender'"] > div,
+            [x-show="pagina === 'login_admin'"] > div {
+                max-width: 100% !important;
+                padding: 1.15rem !important;
+                border-radius: 1rem !important;
+            }
+            [x-show="pagina === 'parceiros'"] .grid.grid-cols-2 { grid-template-columns: 1fr !important; }
+            [x-show="pagina === 'parceiros'"] .col-span-2 { grid-column: span 1 / span 1 !important; }
+            [x-show="pagina === 'financiar'"] .grid,
+            [x-show="pagina === 'vender'"] .grid { grid-template-columns: 1fr !important; }
+
+            /* Admin */
+            [x-show="pagina === 'admin'"] .grid,
+            [x-show="pagina === 'admin'"] .md\:grid-cols-2,
+            [x-show="pagina === 'admin'"] .lg\:grid-cols-4 {
+                grid-template-columns: 1fr !important;
+            }
+            [x-show="pagina === 'admin'"] .p-6,
+            [x-show="pagina === 'admin'"] .md\:p-8 {
+                padding: 1rem !important;
+            }
+            [x-show="pagina === 'admin'"] h2 { font-size: 1.25rem !important; }
+            [x-show="pagina === 'admin'"] .overflow-x-auto {
+                margin-left: -1rem;
+                margin-right: -1rem;
+                padding-left: 1rem;
+                padding-right: 1rem;
+            }
+            [x-show="pagina === 'admin'"] table { min-width: 640px; }
+
+            /* WhatsApp flutuante e footer */
+            a.fixed.bottom-5.right-5 {
+                bottom: 1rem !important;
+                right: 1rem !important;
+                padding: .85rem !important;
+                width: 52px !important;
+                height: 52px !important;
+                justify-content: center !important;
+                border-radius: 999px !important;
+                font-size: 1.15rem !important;
+            }
+            footer { margin-top: 2rem !important; padding: 2rem .5rem 5.5rem !important; }
+            footer .flex.justify-between {
+                flex-direction: column !important;
+                gap: .75rem !important;
+                justify-content: center !important;
+            }
+        }
+
+        @media (min-width: 769px) and (max-width: 1024px) {
+            main { padding-left: 1.25rem !important; padding-right: 1.25rem !important; }
+            .hero-real {
+                min-height: 560px !important;
+            }
+            .hero-bg { background-position: 60% center !important; }
+            #grade-carros .grid.grid-cols-1.sm\:grid-cols-2.lg\:grid-cols-4 {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+            #filtro-secao .grid { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+            [x-show="pagina === 'parceiros'"] .grid.grid-cols-2 { grid-template-columns: repeat(2, minmax(0, 1fr)) !important; }
+        }
+
+        @media (max-width: 420px) {
+            main { padding-left: .75rem !important; padding-right: .75rem !important; }
+            nav .font-black.uppercase { font-size: .95rem !important; }
+            .hero-real::before, .hero-real .hero-bg { height: 205px !important; }
+            .hero-real h1 { font-size: 2rem !important; }
+            .hero-real .grid.grid-cols-3.gap-3 { grid-template-columns: 1fr !important; }
+            .hero-real .grid.grid-cols-3.gap-3 > div {
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                gap: .55rem !important;
+                padding: .7rem !important;
+            }
+            .hero-real .grid.grid-cols-3.gap-3 p br { display: none; }
+            .hero-real .mt-10.grid.grid-cols-3 { grid-template-columns: 1fr !important; }
+            .hero-real .mt-10.grid.grid-cols-3 > div {
+                border-right: 0 !important;
+                border-bottom: 1px solid rgba(255,255,255,.12) !important;
+                padding-bottom: .55rem !important;
+            }
+            .card-glow .relative.overflow-hidden.h-48 { height: 205px !important; }
+        }
+
     </style>
 </head>
 <body x-data="app()" x-init="init()">
